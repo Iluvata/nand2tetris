@@ -10,3 +10,41 @@
 // R0 >= 0, R1 >= 0, and R0*R1 < 32768.
 
 // Put your code here.
+
+// pseudo code
+// i = 0
+// R2 = 0
+// LOOP:
+// if R1 == i: goto END
+// LOOP: R2 = R2 + R0
+//       i = i + 1
+//       goto LOOP
+// END: goto END
+
+    @i
+    M=0
+    @R2
+    M=0
+(LOOP)
+    @R1
+    D=M
+    @i
+    D=M-D
+    @END
+    D;JEQ
+
+    @R0
+    D=M
+    @R2
+    M=D+M   // R2 = R2 + R0
+
+    @i
+    M=M+1
+
+    @LOOP
+    0;JMP
+(END)
+    @END
+    0;JMP
+
+
