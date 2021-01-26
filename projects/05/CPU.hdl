@@ -40,26 +40,27 @@ CHIP CPU {
 
     PARTS:
     //PCload
-    And(a=ng, b=in[2], out=nj1);
-    And(a=zr, b=in[1], out=zj2);
+    And(a=ng, b=instruction[2], out=nj1);
+    And(a=zr, b=instruction[1], out=zj2);
     Not(in=ng, out=nn);
     Not(in=zr, out=nz);
     And(a=nz, b=nn, out=nnz);
-    And(a=nnz, b=j2, out=nnzj3);
+    And(a=nnz, b=instruction[0], out=nnzj3);
     Or(a=nj1, b=zj2, out=nzj);
     Or(a=nzj, b=nnzj3, out=icload);
-    And(a=icloud, b=in[15], out=pcload);
+    And(a=icload, b=instruction[15], out=pcload);
 
-    Mux16(a=instruction, b=aluout, sel=in[15], out=ain);
-    Or(a=in[15], b=in[5], out=aload);
-    Register(in=ain, load=aload, out=aout, out[0..14]=addressM);
-    Mux16(a=aout, b=inM, sel=in[12], out=aluy);
+    Mux16(a=instruction, b=aluout, sel=instruction[15], out=ain);
+    Not(in=instruction[15], out=noti);
+    Or(a=noti, b=instruction[5], out=aload);
+    ARegister(in=ain, load=aload, out=aout, out[0..14]=addressM);
+    Mux16(a=aout, b=inM, sel=instruction[12], out=aluy);
 
     PC(in=aout, load=pcload, inc=true, reset=reset, out[0..14]=pc);
 
-    And(a=in[15], b=in[4], out=dload);
-    Register(in=aluout, load=dload, out=dout);
+    And(a=instruction[15], b=instruction[4], out=dload);
+    DRegister(in=aluout, load=dload, out=dout);
 
-    ALU(x=dout, y=aluy, zx=in[11], nx=in[10], zy=in[9], ny=in[8], f=in[7], no=in[6], out=aluout, zr=zr, ng=ng, out=outM);
-    And(a=in[15], b=in[3], out=writeM);
+    ALU(x=dout, y=aluy, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluout, zr=zr, ng=ng, out=outM);
+    And(a=instruction[15], b=instruction[3], out=writeM);
 }
