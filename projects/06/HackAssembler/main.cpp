@@ -3,12 +3,16 @@
 #include <string>
 #include <algorithm>
 #include <bitset>
+#include <map>
 
 
 using namespace std;
 
+map<string, int> symbolTable;
+
 struct ParseRes{
     int asmType;   // 0: A  1: C  2: L
+    int n;         // line number
     string symbol;
     string dest;
     string comp;
@@ -18,8 +22,10 @@ struct ParseRes{
 class Parser{
 private:
     ifstream asmStream;
+    int n;
 public:
     Parser(string asmFileName){
+        n = 0;
         asmStream.open(asmFileName);
         if(!asmStream.is_open())
             throw "No such file!";
@@ -42,9 +48,15 @@ public:
                 str = str.substr(0, position);
             }
         }while(str.empty());
+        res.n = n;
         if(str[0] == '@'){
             res.asmType = 0;
             res.symbol = str.substr(1);
+            n++;
+        }
+        else if(str[0] == '('){
+            res.asmType = 2;
+            res.symbol = str.substr(1, str.size() - 2);
         }
         else{
             res.asmType = 1;
@@ -65,6 +77,7 @@ public:
                 res.comp = str;
                 res.jump = "";
             }
+            n++;
         }
         return true;
     }
@@ -161,20 +174,66 @@ public:
 
 };
 
-int main(int argc, char* argv[])
+int main()
 {
+    // predefined lables
+    symbolTable["SP"] = 0;
+    symbolTable["LCL"] = 1;
+    symbolTable["ARG"] = 2;
+    symbolTable["THIS"] = 3;
+    symbolTable["THAT"] = 4;
+    symbolTable["SCREEN"] = 16384;
+    symbolTable["KBD"] = 24576;
+    for(int i = 0; i < 16; ++i){
+        symbolTable["R" + to_string(i)] = i;
+    }
+
+
+
     string filename;
     cin >> filename;
+
+    try {
+        Parser pass1(filename);
+        ParseRes parsed;
+        Code cres;
+
+
+        while(pass1.Parse(parsed)){
+            // cout << parsed.asmType << "\t" << parsed.n << endl;
+            if(parsed.asmType == 2){
+                symbolTable[parsed.symbol] = parsed.n;
+            }
+        }
+    } catch (const char* msg) {
+        cerr << msg << endl;
+    }
+
+    // map<string, int> look = symbolTable;
+
+
     string outputFileName = filename.substr(0, filename.find('.')) + ".hack";
     ofstream outFile(outputFileName);
     try {
-        Parser infile(filename);
+        Parser pass2(filename);
         ParseRes parsed;
         Code cres;
-        while(infile.Parse(parsed)){
-            // outFile << parsed.symbol << "\tdest:" << parsed.dest << "\tcomp:" << parsed.comp << "\tjump:" << parsed.jump << endl;
+        int n = 16;
+        while(pass2.Parse(parsed)){
             if(parsed.asmType == 0){
-                int i = stoi(parsed.symbol);
+                int i;
+                try {
+                    i = stoi(parsed.symbol);
+                } catch (...) {
+                    if(symbolTable.count(parsed.symbol)){
+                        i = symbolTable[parsed.symbol];
+                    }
+                    else{
+                        symbolTable[parsed.symbol] = n;
+                        i = n;
+                        n++;
+                    }
+                }
                 outFile << (bitset<16>)i << endl;
             }
             else if(parsed.asmType == 1){
@@ -183,6 +242,7 @@ int main(int argc, char* argv[])
                 cres.jump(parsed.jump);
                 outFile << "111" + cres.cbits + cres.dbits + cres.jbits << endl;
             }
+
         }
     } catch (const char* msg) {
         cerr << msg << endl;
