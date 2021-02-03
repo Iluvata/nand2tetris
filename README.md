@@ -1,1 +1,1 @@
-this is my implementation for nand2teris
+This is my implementation for nand2teris.
